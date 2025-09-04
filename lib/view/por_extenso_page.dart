@@ -59,12 +59,40 @@ class _PorExtensoPageState extends State<PorExtensoPage> {
               child: FutureBuilder(
                 future: apiService.convertePorExtenso(campo), 
                 builder: (context, snapshot){
-                  
+                  switch(snapshot.connectionState){
+                    case ConnectionState.waiting:
+                      return Container(
+                        width: 200,
+                        height: 200,
+                        alignment: Alignment.center,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white),
+                            strokeWidth: 5.0,
+                            ),
+                      );
+                      default:
+                        if(snapshot.hasError){
+                          return Container();
+                        } else {
+                          return exibeResultado(context, snapshot);
+                        }
+                  }
                 }),
             )
           ],
         ),
       ),
     );
+  }
+
+  Widget exibeResultado(BuildContext context, AsyncSnapshot snapshot){
+    return Padding(
+      padding: EdgeInsets.only(top: 10.0),
+      child: Text(
+          snapshot.data["text"] ?? '',
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
+      );
   }
 }
