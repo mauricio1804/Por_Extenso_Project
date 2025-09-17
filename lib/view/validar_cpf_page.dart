@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:por_extenso/service/invertexto_service.dart';
 
-class BuscaCepPage extends StatefulWidget {
-  const BuscaCepPage({super.key});
+class ValidarCpfPage extends StatefulWidget {
+  const ValidarCpfPage({super.key});
 
   @override
-  State<BuscaCepPage> createState() => _BuscaCepPageState();
+  State<ValidarCpfPage> createState() => _ValidarCpfPageState();
 }
 
-class _BuscaCepPageState extends State<BuscaCepPage> {
+class _ValidarCpfPageState extends State<ValidarCpfPage> {
   String? campo;
   String? resultado;
   final apiService = InvertextoService();
+
+  final List<String> tipos = ['cpf', 'cnpj'];
+  String? tipoSelecionado = 'cpf';
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +44,31 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
         padding: EdgeInsets.all(10.0),
         child: Column(
           children: <Widget>[
+            DropdownButtonFormField<String>(
+              value: tipoSelecionado,
+              decoration: InputDecoration(
+                labelText: 'Selecione o tipo',
+                labelStyle: TextStyle(color: Colors.white),
+                border: OutlineInputBorder(),
+              ),
+              dropdownColor: Colors.black,
+              style: TextStyle(color: Colors.white, fontSize: 18),
+              items: tipos.map((String tipo) {
+                return DropdownMenuItem<String>(
+                  value: tipo,
+                  child: Text(tipo, style: TextStyle(color: Colors.white)),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  tipoSelecionado = newValue;
+                });
+              },
+            ),
+            SizedBox(height: 10),
             TextField(
               decoration: InputDecoration(
-                labelText: 'Digite um cep',
+                labelText: 'Digite um CPF ou CNPJ',
                 labelStyle: TextStyle(color: Colors.white),
                 border: OutlineInputBorder(),
               ),
@@ -59,13 +84,13 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
               child: (campo == null || campo!.isEmpty)
                   ? Center(
                       child: Text(
-                        'Digite um CEP para buscar.',
+                        'Digite um CPF ou CNPJ para validar.',
                         style: TextStyle(color: Colors.white70, fontSize: 16),
                         textAlign: TextAlign.center,
                       ),
                     )
                   : FutureBuilder(
-                      future: apiService.buscaCEP(campo),
+                      future: apiService.validarCPF(campo, tipoSelecionado),
                       builder: (context, snapshot) {
                         switch (snapshot.connectionState) {
                           case ConnectionState.waiting:
@@ -113,7 +138,7 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
                                             SizedBox(width: 12),
                                             Flexible(
                                               child: Text(
-                                                'Ocorreu um erro ao buscar o CEP:\n${snapshot.error}',
+                                                'Ocorreu um erro na validação:\n${snapshot.error}',
                                                 style: TextStyle(
                                                   color: Colors.white,
                                                   fontSize: 16,
@@ -138,8 +163,10 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
                                   ),
                                 ),
                               );
-                            } else {
+                            } else if (snapshot.hasData) {
                               return exibeResultado(context, snapshot);
+                            } else {
+                              return Container();
                             }
                         }
                       },
@@ -150,23 +177,11 @@ class _BuscaCepPageState extends State<BuscaCepPage> {
       ),
     );
   }
-
   Widget exibeResultado(BuildContext context, AsyncSnapshot snapshot) {
-    String enderecoCompleto = '';
-    if (snapshot.data != null) {
-      enderecoCompleto += snapshot.data["street"] ?? "Rua não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto +=
-          snapshot.data["neighborhood"] ?? "Bairro não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto += snapshot.data["city"] ?? "Cidade não disponível";
-      enderecoCompleto += "\n";
-      enderecoCompleto += snapshot.data["state"] ?? "Estado não disponível";
-    }
     return Padding(
       padding: EdgeInsets.only(top: 10.0),
       child: Text(
-        enderecoCompleto,
+        snapshot.data["valid"] == true ? "Válido!" : "Inválido!",
         style: TextStyle(color: Colors.white, fontSize: 18),
       ),
     );
